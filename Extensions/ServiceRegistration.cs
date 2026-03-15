@@ -57,7 +57,7 @@ public static class ServiceRegistration
                 ValidateIssuerSigningKey = true,
                 ValidIssuer = config["JWT:Issuer"],
                 ValidAudience = config["JWT:Audience"],
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["JWT:Key"])),
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["JWT:Key"] ?? "")),
                 ClockSkew = TimeSpan.Zero
             };
         });
@@ -68,6 +68,6 @@ public static class ServiceRegistration
 
         services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<ITagService, TagService>();
-
+        services.AddScoped<IContactService, ContactService>();
     }
 }
