@@ -10,7 +10,8 @@ namespace TechBlogApi.Endpoints
         {
             var group = app.MapGroup("api/tag")
             .RequireRateLimiting("fixed")
-            .RequireAuthorization();
+            .RequireAuthorization()
+            .WithTags("Tag");
 
             group.MapGet(string.Empty, async (ITagService service) =>
             {

@@ -69,5 +69,6 @@ public static class ServiceRegistration
         services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<ITagService, TagService>();
         services.AddScoped<IContactService, ContactService>();
+        services.AddScoped<ISocialService, SocialService>();
     }
 }
