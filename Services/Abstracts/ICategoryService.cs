@@ -5,7 +5,7 @@ namespace TechBlogApi.Services.Abstracts
 {
     public interface ICategoryService
     {
-        Task<ApiResult<IEnumerable<CategoryDto>>> GetAllCategoryAsync();
+        Task<ApiResult<IList<CategoryDto>>> GetAllCategoryAsync();
         Task<ApiResult<CategoryDto>> GetAsyncCategory(int id);
         Task<ApiResult> CreateCategoryAsync(CreateCategoryDto dto);
         Task<ApiResult> UpdateCategoryAsync(UpdateCategoryDto dto);

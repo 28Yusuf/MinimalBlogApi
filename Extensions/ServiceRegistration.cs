@@ -63,6 +63,7 @@ public static class ServiceRegistration
         });
         services.AddAuthorization();
         services.AddScoped<TokenHandlers>();
+        services.AddSignalR();
         #endregion
 
 
@@ -70,5 +71,6 @@ public static class ServiceRegistration
         services.AddScoped<ITagService, TagService>();
         services.AddScoped<IContactService, ContactService>();
         services.AddScoped<ISocialService, SocialService>();
+        services.AddScoped<IPostService, PostService>();
     }
 }

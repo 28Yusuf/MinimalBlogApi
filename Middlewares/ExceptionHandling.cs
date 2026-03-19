@@ -47,7 +47,7 @@ namespace TechBlogApi.Middlewares
             ProblemDetails problem = new ProblemDetails
             {
                 Instance = context.Request.Path,
-                Detail = _env.EnvironmentName == "Development" ? ex.ToString() : "Server Error",
+                Detail = _env.EnvironmentName == "Development" ? ex.Message : "Server Error",
                 Title = "Server Error",
                 Status = (int)HttpStatusCode.InternalServerError
             };

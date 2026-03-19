@@ -5,7 +5,7 @@ namespace TechBlogApi.Services.Abstracts
 {
     public interface ITagService
     {
-        Task<ApiResult<IEnumerable<TagDto>>> GetAllTagsAsync();
+        Task<ApiResult<IList<TagDto>>> GetAllTagsAsync();
         Task<ApiResult<TagDto>> GetByIdTagAsync(int id);
         Task<ApiResult> CreateTagAsync(CreateTagDto dto);
         Task<ApiResult> UpdateTagAsync(UpdateTagDto dto);

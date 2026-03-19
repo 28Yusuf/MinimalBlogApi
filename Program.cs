@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using TechBlogApi.Context;
 using TechBlogApi.Extensions;
+using TechBlogApi.Hubs;
 using TechBlogApi.Middlewares;
 
 SQLitePCL.Batteries.Init();
@@ -85,5 +86,7 @@ app.UseRateLimiter();
 app.MapControllers();
 
 app.MapCarter();
+
+app.MapHub<NotificationHub>("/notificationHub");
 
 app.Run();

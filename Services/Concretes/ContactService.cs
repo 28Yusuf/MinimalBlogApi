@@ -39,17 +39,10 @@ namespace TechBlogApi.Services.Concretes
             return result > 0 ? new ApiResult(true, "Deleted Successfully") : new ApiResult(false, "Failed");
         }
 
-        public async Task<ApiResult<IEnumerable<ContactDto>>> GetAllContactAsync()
+        public async Task<ApiResult<IList<ContactDto>>> GetAllContactAsync()
         {
             var categoryDtos = unitOfWork.GetReadRepository<Contact>().GetAllQueryable().Select(x => x.ToDto());
-            return new ApiResult<IEnumerable<ContactDto>>(true, categoryDtos.AsEnumerable(), await categoryDtos.CountAsync());
-        }
-
-        public async Task<ApiResult<IEnumerable<TagDto>>> GetAllTagsAsync()
-        {
-            IQueryable<Tag> tags = unitOfWork.GetReadRepository<Tag>().GetAllQueryable();
-            IQueryable<TagDto> dtos = tags.Select(x => x.ToDto());
-            return new ApiResult<IEnumerable<TagDto>>(true, dtos, dtos.Count());
+            return new ApiResult<IList<ContactDto>>(true, categoryDtos.ToList(), await categoryDtos.CountAsync());
         }
 
         public async Task<ApiResult<ContactDto>> GetAsyncContact(int id)

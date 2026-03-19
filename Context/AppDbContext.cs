@@ -29,7 +29,7 @@ namespace TechBlogApi.Context
         {
             var entries = ChangeTracker.Entries();
             var now = DateTime.Now;
-            
+
             foreach (var entry in entries)
             {
                 if (entry.State == EntityState.Added && entry.Entity is BaseEntity entity)
@@ -45,6 +45,21 @@ namespace TechBlogApi.Context
                 }
             }
             return await base.SaveChangesAsync(cancellationToken);
+        }
+
+        protected override void OnModelCreating(ModelBuilder builder)
+        {
+            base.OnModelCreating(builder);
+
+            builder.Entity<Post>()
+            .HasOne(x => x.PostBookMark)
+            .WithOne(y => y.Post)
+            .HasForeignKey<PostBookMark>(x => x.PostId);
+            
+            builder.Entity<Post>()
+            .HasOne(x => x.PostLike)
+            .WithOne(y => y.Post)
+            .HasForeignKey<PostLike>(x => x.PostId);
         }
     }
 }

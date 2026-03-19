@@ -10,6 +10,15 @@ namespace TechBlogApi.Models
         public AppUser? User { get; set; }
 
         public int CategoryId { get; set; }
-        public Category? Category { get; set; }
+        public virtual Category? Category { get; set; }
+
+        public int PostBookMarkId { get; set; }
+        public virtual PostBookMark? PostBookMark { get; set; }
+        
+        public int PostLikeId { get; set; }
+        public virtual PostLike? PostLike { get; set; }
+
+        public virtual ICollection<Comment>? Comments { get; set; }
+        public virtual ICollection<Tag>? Tags { get; set; }
     }
 }

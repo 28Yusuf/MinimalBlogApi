@@ -30,7 +30,7 @@ namespace TechBlogApi.Helpers
                 new Claim("userId", user.Id.ToString())
             };
 
-            model.ExpirationTime = DateTime.Now.AddMinutes(5);
+            model.ExpirationTime = DateTime.Now.AddMinutes(15);
             JwtSecurityToken jwtSecurityToken = new JwtSecurityToken
             (
                 expires: model.ExpirationTime,

@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using TechBlogApi.Dtos.Category;
 using TechBlogApi.Helpers;
 using TechBlogApi.Mappers;
@@ -35,10 +36,10 @@ namespace TechBlogApi.Services.Concretes
             return result > 0 ? new ApiResult(true, "Category Deleted Succcessfully") : new ApiResult(false, "It cant be deleted");
         }
 
-        public async Task<ApiResult<IEnumerable<CategoryDto>>> GetAllCategoryAsync()
+        public async Task<ApiResult<IList<CategoryDto>>> GetAllCategoryAsync()
         {
             var categories = _unitOfWork.GetReadRepository<Category>().GetAllQueryable();
-            IEnumerable<CategoryDto> dtos = categories.Select(x => new CategoryDto()
+            IList<CategoryDto> dtos = await categories.Select(x => new CategoryDto()
             {
                 Id = x.Id,
                 Name = x.Name,
@@ -46,8 +47,8 @@ namespace TechBlogApi.Services.Concretes
                 CreatedDate = x.CreatedDate,
                 UpdatedBy = x.UpdatedBy,
                 UpdatedDate = x.UpdatedDate
-            });
-            return new ApiResult<IEnumerable<CategoryDto>>(true, dtos, categories.Count());
+            }).ToListAsync();
+            return new ApiResult<IList<CategoryDto>>(true, dtos, categories.Count());
         }
 
         public async Task<ApiResult<CategoryDto>> GetAsyncCategory(int id)

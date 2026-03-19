@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using TechBlogApi.Dtos.Tag;
 using TechBlogApi.Exceptions;
 using TechBlogApi.Helpers;
@@ -35,11 +36,11 @@ namespace TechBlogApi.Services.Concretes
             return result > 0 ? new ApiResult(true, "Deleted Successfully") : new ApiResult(false, "Failed");
         }
 
-        public async Task<ApiResult<IEnumerable<TagDto>>> GetAllTagsAsync()
+        public async Task<ApiResult<IList<TagDto>>> GetAllTagsAsync()
         {
             IQueryable<Tag> tags = unitOfWork.GetReadRepository<Tag>().GetAllQueryable();
             IQueryable<TagDto> dtos = tags.Select(x => x.ToDto());
-            return new ApiResult<IEnumerable<TagDto>>(true, dtos, dtos.Count());
+            return new ApiResult<IList<TagDto>>(true, await dtos.ToListAsync(), dtos.Count());
         }
 
         public async Task<ApiResult<TagDto>> GetByIdTagAsync(int id)
