@@ -51,7 +51,7 @@ namespace TechBlogApi.Repositories.Concretes
 
             var lambda = Expression.Lambda<Func<T, bool>>(condition, parameter);
 
-            return Table.AsNoTracking().Where(lambda);
+            return Table.Where(lambda);
         }
 
         public async Task<T> GetAsync(Expression<Func<T, bool>> expression)

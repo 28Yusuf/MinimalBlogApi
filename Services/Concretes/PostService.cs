@@ -69,9 +69,27 @@ namespace TechBlogApi.Services.Concretes
                 : new ApiResult(false, "Failed to add tag");
         }
 
-        public Task<ApiResult> BookmarkPost(int postId, int userId)
+        public async Task<ApiResult> BookmarkPost(int postId, int userId)
         {
-            throw new NotImplementedException();
+            var bookmark = await unitOfWork.GetReadRepository<PostBookMark>()
+                .GetAsync(x => x.PostId == postId && x.UserId == userId);
+                
+            if (bookmark != null)
+                return new ApiResult(false, "Post already bookmarked");
+                
+            PostBookMark newBookmark = new()
+            {
+                PostId = postId,
+                UserId = userId,
+                CreatedDate = DateTime.UtcNow
+            };
+            
+            await unitOfWork.GetWriteRepository<PostBookMark>().AddAsync(newBookmark);
+            int result = await unitOfWork.SaveAsync();
+            
+            return result > 0
+                ? new ApiResult(true, "Bookmark added successfully")
+                : new ApiResult(false, "Failed to add bookmark");
         }
 
         public async Task<ApiResult> CreatePost(CreatePostDto dto)
@@ -83,10 +101,12 @@ namespace TechBlogApi.Services.Concretes
                 Content = dto.Content,
                 CategoryId = dto.CategoryId,
                 UserId = userId,
+                CreatedDate = DateTime.UtcNow,
+                CreatedBy = userId
             };
-            if (tagIds != null && dto.TagIds.Any())
+            if (tagIds != null && dto.TagIds!.Any())
             {
-                List<Tag> tags = await unitOfWork.GetReadRepository<Tag>().GetAllQueryable().Where(x => tagIds!.Contains(x.Id)).ToListAsync();
+                List<Tag> tags = await unitOfWork.GetReadRepository<Tag>().GetAllQueryable().Where(x => tagIds.Contains(x.Id)).ToListAsync();
                 post.Tags = tags;
             }
 
@@ -128,7 +148,7 @@ namespace TechBlogApi.Services.Concretes
 
             if (!string.IsNullOrEmpty(query.SearchTerm))
             {
-                posts.Where(p => p.Content.Contains(query.SearchTerm));
+                posts = posts.Where(p => p.Content.Contains(query.SearchTerm));
             }
             if (!string.IsNullOrEmpty(query.SortBy))
             {
@@ -144,6 +164,8 @@ namespace TechBlogApi.Services.Concretes
                 Id = x.Id,
                 CategoryId = x.CategoryId,
                 CategoryName = x.Category!.Name,
+                UserId = x.UserId,
+                UserName = x.User.UserName,
                 Content = x.Content,
                 Comments = x.Comments!.Select(a => a.ToDto()).ToList(),
                 Tags = x.Tags!.Select(x => x.ToDto()).ToList(),
@@ -155,59 +177,250 @@ namespace TechBlogApi.Services.Concretes
             return new ApiResult<IList<PostDto>>(true, postDtos, totalCount: totalCounts, query.PageNumber, query.PageSize);
         }
 
-        public Task<ApiResult<PostDto>> GetByIdPostAsync(int id)
+        public async Task<ApiResult<PostDto>> GetByIdPostAsync(int id)
         {
-            throw new NotImplementedException();
+            Post post = await unitOfWork.GetReadRepository<Post>()
+                .GetAllQueryable()
+                .Include(x => x.User)
+                .Include(x => x.Category)
+                .Include(x => x.Comments!)
+                .ThenInclude(x => x.User)
+                .Include(x => x.Tags)
+                .FirstOrDefaultAsync(x => x.Id == id);
+                
+            if (post == null) return new ApiResult<PostDto>(false, null!);
+            return new ApiResult<PostDto>(true, post.ToDto());
         }
 
-        public Task<ApiResult<IList<CommentDto>>> GetCommentsByPostAsync(int postId)
+        public async Task<ApiResult<IList<CommentDto>>> GetCommentsByPostAsync(int postId)
         {
-            throw new NotImplementedException();
+            var comments = await unitOfWork.GetReadRepository<Comment>()
+                .GetAllQueryable()
+                .Include(x => x.User)
+                .Where(x => x.PostId == postId)
+                .OrderByDescending(x => x.CreatedDate)
+                .Select(x => x.ToDto())
+                .ToListAsync();
+                
+            return new ApiResult<IList<CommentDto>>(true, comments);
         }
 
-        public Task<ApiResult<IList<PostDto>>> GetPostsByCategoryAsync(int categoryId)
+        public async Task<ApiResult<IList<PostDto>>> GetPostsByCategoryAsync(int categoryId)
         {
-            throw new NotImplementedException();
+            var posts = await unitOfWork.GetReadRepository<Post>()
+                .GetAllQueryable()
+                .Include(x => x.User)
+                .Include(x => x.Category)
+                .Include(x => x.Comments!)
+                .ThenInclude(x => x.User)
+                .Include(x => x.Tags)
+                .Where(x => x.CategoryId == categoryId)
+                .OrderByDescending(x => x.CreatedDate)
+                .Select(x => new PostDto
+                {
+                    Id = x.Id,
+                    CategoryId = x.CategoryId,
+                    CategoryName = x.Category!.Name,
+                    UserId = x.UserId,
+                    UserName = x.User.UserName,
+                    Content = x.Content,
+                    Comments = x.Comments!.Select(a => a.ToDto()).ToList(),
+                    Tags = x.Tags!.Select(x => x.ToDto()).ToList(),
+                    CreatedDate = x.CreatedDate,
+                    CreatedBy = x.CreatedBy,
+                    UpdatedBy = x.UpdatedBy,
+                    UpdatedDate = x.UpdatedDate
+                })
+                .ToListAsync();
+                
+            return new ApiResult<IList<PostDto>>(true, posts);
         }
 
-        public Task<ApiResult<IList<PostDto>>> GetPostsByUserAsync(int userId)
+        public async Task<ApiResult<IList<PostDto>>> GetPostsByUserAsync(int userId)
         {
-            throw new NotImplementedException();
+            var posts = await unitOfWork.GetReadRepository<Post>()
+                .GetAllQueryable()
+                .Include(x => x.User)
+                .Include(x => x.Category)
+                .Include(x => x.Comments!)
+                .ThenInclude(x => x.User)
+                .Include(x => x.Tags)
+                .Where(x => x.UserId == userId)
+                .OrderByDescending(x => x.CreatedDate)
+                .Select(x => new PostDto
+                {
+                    Id = x.Id,
+                    CategoryId = x.CategoryId,
+                    CategoryName = x.Category!.Name,
+                    UserId = x.UserId,
+                    UserName = x.User.UserName,
+                    Content = x.Content,
+                    Comments = x.Comments!.Select(a => a.ToDto()).ToList(),
+                    Tags = x.Tags!.Select(x => x.ToDto()).ToList(),
+                    CreatedDate = x.CreatedDate,
+                    CreatedBy = x.CreatedBy,
+                    UpdatedBy = x.UpdatedBy,
+                    UpdatedDate = x.UpdatedDate
+                })
+                .ToListAsync();
+                
+            return new ApiResult<IList<PostDto>>(true, posts);
         }
 
-        public Task<ApiResult<IList<TagDto>>> GetTagsByPostAsync(int postId)
+        public async Task<ApiResult<IList<TagDto>>> GetTagsByPostAsync(int postId)
         {
-            throw new NotImplementedException();
+            var post = await unitOfWork.GetReadRepository<Post>()
+                .GetAllQueryable()
+                .Include(x => x.Tags)
+                .FirstOrDefaultAsync(x => x.Id == postId);
+                
+            if (post == null)
+                return new ApiResult<IList<TagDto>>(false, null!);
+                
+            var tags = post.Tags?.Select(x => x.ToDto()).ToList() ?? new List<TagDto>();
+            return new ApiResult<IList<TagDto>>(true, tags);
         }
 
-        public Task<ApiResult> LikePost(int postId, int userId)
+        public async Task<ApiResult> LikePost(int postId, int userId)
         {
-            throw new NotImplementedException();
+            var existingLike = await unitOfWork.GetReadRepository<PostLike>()
+                .GetAsync(x => x.PostId == postId && x.UserId == userId);
+                
+            if (existingLike != null)
+                return new ApiResult(false, "Post already liked");
+                
+            PostLike like = new()
+            {
+                PostId = postId,
+                UserId = userId,
+                CreatedDate = DateTime.UtcNow
+            };
+            
+            await unitOfWork.GetWriteRepository<PostLike>().AddAsync(like);
+            int result = await unitOfWork.SaveAsync();
+            
+            return result > 0
+                ? new ApiResult(true, "Post liked successfully")
+                : new ApiResult(false, "Failed to like post");
         }
 
-        public Task<ApiResult> RemoveBookmark(int postId, int userId)
+        public async Task<ApiResult> RemoveBookmark(int postId, int userId)
         {
-            throw new NotImplementedException();
+            var bookmark = await unitOfWork.GetReadRepository<PostBookMark>()
+                .GetAsync(x => x.PostId == postId && x.UserId == userId);
+                
+            if (bookmark == null)
+                return new ApiResult(false, "Bookmark not found");
+                
+            unitOfWork.GetWriteRepository<PostBookMark>().Remove(bookmark);
+            int result = await unitOfWork.SaveAsync();
+            
+            return result > 0
+                ? new ApiResult(true, "Bookmark removed successfully")
+                : new ApiResult(false, "Failed to remove bookmark");
         }
 
-        public Task<ApiResult> RemoveTagFromPost(int postId, int tagId)
+        public async Task<ApiResult> RemoveTagFromPost(int postId, int tagId)
         {
-            throw new NotImplementedException();
+            Post post = await unitOfWork.GetReadRepository<Post>()
+                .GetAllQueryable()
+                .Include(x => x.Tags)
+                .FirstOrDefaultAsync(x => x.Id == postId);
+                
+            if (post == null) 
+                return new ApiResult(false, "Post not found");
+                
+            var tag = post.Tags?.FirstOrDefault(x => x.Id == tagId);
+            if (tag == null)
+                return new ApiResult(false, "Tag not found on this post");
+                
+            post.Tags?.Remove(tag);
+            unitOfWork.GetWriteRepository<Post>().Update(post);
+            int result = await unitOfWork.SaveAsync();
+            
+            return result > 0
+                ? new ApiResult(true, "Tag removed successfully")
+                : new ApiResult(false, "Failed to remove tag");
         }
 
-        public Task<ApiResult> UnlikePost(int postId, int userId)
+        public async Task<ApiResult> UnlikePost(int postId, int userId)
         {
-            throw new NotImplementedException();
+            var like = await unitOfWork.GetReadRepository<PostLike>()
+                .GetAsync(x => x.PostId == postId && x.UserId == userId);
+                
+            if (like == null)
+                return new ApiResult(false, "Like not found");
+                
+            unitOfWork.GetWriteRepository<PostLike>().Remove(like);
+            int result = await unitOfWork.SaveAsync();
+            
+            return result > 0
+                ? new ApiResult(true, "Post unliked successfully")
+                : new ApiResult(false, "Failed to unlike post");
         }
 
-        public Task<ApiResult> UpdateComment(UpdateCommentDto dto)
+        public async Task<ApiResult> UpdateComment(UpdateCommentDto dto)
         {
-            throw new NotImplementedException();
+            var comment = await unitOfWork.GetReadRepository<Comment>()
+                .GetAsync(x => x.Id == dto.Id);
+                
+            if (comment == null)
+                return new ApiResult(false, "Comment not found");
+                
+            int userId = int.Parse(contextAccessor?.HttpContext?.User.FindFirstValue("userId") ?? "0");
+            
+            // Check if user is the comment owner
+            if (comment.UserId != userId)
+                return new ApiResult(false, "You can only update your own comments");
+                
+            comment.Content = dto.Content;
+            comment.UpdatedDate = DateTime.UtcNow;
+            comment.UpdatedBy = userId;
+            
+            unitOfWork.GetWriteRepository<Comment>().Update(comment);
+            int result = await unitOfWork.SaveAsync();
+            
+            return result > 0
+                ? new ApiResult(true, "Comment updated successfully")
+                : new ApiResult(false, "Failed to update comment");
         }
 
-        public Task<ApiResult> UpdatePost(UpdatePostDto dto)
+        public async Task<ApiResult> UpdatePost(UpdatePostDto dto)
         {
-            throw new NotImplementedException();
+            var post = await unitOfWork.GetReadRepository<Post>()
+                .GetAllQueryable()
+                .Include(x => x.Tags)
+                .FirstOrDefaultAsync(x => x.Id == dto.Id);
+                
+            if (post == null)
+                return new ApiResult(false, "Post not found");
+                
+            int userId = int.Parse(contextAccessor?.HttpContext?.User.FindFirstValue("userId") ?? "0");
+            
+            if (post.UserId != userId)
+                return new ApiResult(false, "You can only update your own posts");
+                
+            post.Content = dto.Content;
+            post.CategoryId = dto.CategoryId;
+            post.UpdatedDate = DateTime.UtcNow;
+            post.UpdatedBy = userId;
+            
+            if (dto.TagIds != null && dto.TagIds.Any())
+            {
+                HashSet<int> tagIds = dto.TagIds.ToHashSet();
+                List<Tag> tags = await unitOfWork.GetReadRepository<Tag>()
+                    .GetAllQueryable()
+                    .Where(x => tagIds.Contains(x.Id))
+                    .ToListAsync();
+                post.Tags = tags;
+            }
+            
+            unitOfWork.GetWriteRepository<Post>().Update(post);
+            int result = await unitOfWork.SaveAsync();
+            
+            return result > 0
+                ? new ApiResult(true, "Post updated successfully")
+                : new ApiResult(false, "Failed to update post");
         }
     }
 }
